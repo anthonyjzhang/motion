@@ -24,7 +24,7 @@ export default function Demo() {
     // const [elbowAngle, setElbowAngle] = useState(Number);
     // const [curlSpeed, setCurlSpeed] = useState(Number);
     const [message, setMessage] = useState("Welcome - you've taken the first step to improving your wellness!");
-    const [exercise, setExercise] = useState(null);  
+    const [exercise, setExercise] = useState("cobra");  
 
     let countdownInterval;
     let detectionInterval;
@@ -306,7 +306,7 @@ return (
             <canvas ref={canvasRef} width="1280" height="960" style={{ position: 'absolute', top: 0, left: 0 }} />
 
             <img 
-                src="images/${exercise}.jpg" 
+                src="images/cobra.jpg" 
                 alt="an image of a yoga position" 
                 style={{
                     position: 'absolute',
