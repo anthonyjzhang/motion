@@ -17,7 +17,7 @@ const PageContainer = styled.div`
     font-family: 'Arial', sans-serif;
     color: #333;
     position: relative;
-    background-color: rgba(255, 255, 255, 0.3);  // semi-transparent white background
+    background-color: rgba(255, 240, 220, 0.3);  // soft beige with 30% opacity
 `;
 
 

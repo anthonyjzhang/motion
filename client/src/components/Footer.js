@@ -1,9 +1,23 @@
-import React from 'react';
+import React, { useState } from 'react';
 import './Footer.css';
 import { Button } from './Button';
 import { Link } from 'react-router-dom';
 
 function Footer() {
+  const [subscribed, setSubscribed] = useState(false);
+
+  const handleSubscription = (e) => {
+    e.preventDefault();
+
+    const email = e.target.elements.email.value.trim();
+
+    if (email) {
+      setSubscribed(true);
+    } else {
+      window.alert('Please enter a valid email.');
+    }
+  }
+
   return (
     <div className='footer-container'>
       <section className='footer-subscription'>
@@ -14,26 +28,27 @@ function Footer() {
           You can unsubscribe at any time.
         </p>
         <div className='input-areas'>
-          <form>
+          <form onSubmit={handleSubscription}>
             <input
               className='footer-input'
               name='email'
               type='email'
               placeholder='Your Email'
             />
-            <Button buttonStyle='btn--outline'>Subscribe</Button>
+            <Button buttonStyle='btn--outline' type="submit">Subscribe</Button>
           </form>
+          {subscribed && <p className='subscription-success'>You've successfully subscribed!</p>}
         </div>
       </section>
-      <div class='footer-links'>
+      <div className='footer-links'>
         <div className='footer-link-wrapper'>
-          <div class='footer-link-items'>
+          <div className='footer-link-items'>
             <h2>About Us</h2>
             <Link to='/sign-up'>How it works</Link>
             <Link to='/'>Testimonials</Link>
             <Link to='/'>Terms of Service</Link>
           </div>
-          <div class='footer-link-items'>
+          <div className='footer-link-items'>
             <h2>Contact Us</h2>
             <Link to='/'>Contact</Link>
             <Link to='/'>Support</Link>
