@@ -1,16 +1,11 @@
 import React, { useRef, useEffect, useState } from 'react';
-import * as posenet from '@tensorflow-models/posenet';
 import * as posedetection from '@tensorflow-models/pose-detection';
 import * as tf from '@tensorflow/tfjs';
-//import * as movenet from '@tensorflow-models/movenet';
 import { Box, Button, Text, VStack, Spinner } from "@chakra-ui/react";
-
-//import dotenv from 'dotenv
 import OpenAI from 'openai';
 
+export default function Demo() {
 
-//dotenv.config()
-export default function Test() {
     const videoRef = useRef(null);
     const canvasRef = useRef(null);
     const [keypointsData, setKeypointsData] = useState([]);
@@ -29,6 +24,7 @@ export default function Test() {
     let countdownInterval;
     let detectionInterval;
 
+// configure backend
 useEffect(() => {
     async function setupBackend() {
         try {
@@ -42,6 +38,8 @@ useEffect(() => {
     setupBackend();
 }, []);
 
+
+// configure video
 useEffect(() => {
     async function setupCamera() {
         try {
@@ -49,13 +47,13 @@ useEffect(() => {
             const stream = await navigator.mediaDevices.getUserMedia({ 'video': true });
             video.srcObject = stream;
             video.onloadedmetadata = () => {
-            video.play();
-            canvasRef.current.width = video.videoWidth;
-            canvasRef.current.height = video.videoHeight;
-            const dpr = window.devicePixelRatio || 1;
-            canvasRef.current.style.width = `${video.videoWidth * dpr}px`; 
-            canvasRef.current.style.height = `${video.videoHeight * dpr}px`;
-};
+                video.play();
+                canvasRef.current.width = video.videoWidth;
+                canvasRef.current.height = video.videoHeight;
+                const dpr = window.devicePixelRatio || 1;
+                canvasRef.current.style.width = `${video.videoWidth * dpr}px`; 
+                canvasRef.current.style.height = `${video.videoHeight * dpr}px`;
+            };
         } 
         catch (error) {
             console.error("Error setting up the camera:", error);
@@ -65,39 +63,33 @@ useEffect(() => {
 }, []);
 
 const drawKeypoints = (keypoints) => {
-const canvas = canvasRef.current;
-const ctx = canvas.getContext('2d');
-
-ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-// Define the keypoint connections
-const adjacentPairs = posedetection.util.getAdjacentPairs(posedetection.SupportedModels.MoveNet);
-
-
-// Draw the keypoints
-keypoints.forEach(keypoint => {
-    const mirroredX = canvas.width - keypoint.x;
-    ctx.beginPath();
-    ctx.arc(mirroredX, keypoint.y, 5, 0, 2 * Math.PI);
-    ctx.fillStyle = 'red';
-    ctx.fill();
-});
-
-// Draw the lines
-adjacentPairs.forEach(points => {
-    const [startPoint, endPoint] = points.map(p => keypoints[p]);
-    if (startPoint && endPoint) {
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const adjacentPairs = posedetection.util.getAdjacentPairs(posedetection.SupportedModels.MoveNet);
+    // Draw the keypoints
+    keypoints.forEach(keypoint => {
+        const mirroredX = canvas.width - keypoint.x;
         ctx.beginPath();
-        ctx.moveTo(canvas.width - startPoint.x, startPoint.y);
-        ctx.lineTo(canvas.width - endPoint.x, endPoint.y);
-        ctx.lineWidth = 2;
-        ctx.strokeStyle = 'red';
-        ctx.stroke();
-    }
-});
+        ctx.arc(mirroredX, keypoint.y, 5, 0, 2 * Math.PI);
+        ctx.fillStyle = 'red';
+        ctx.fill();
+    });
+    // Draw the lines
+    adjacentPairs.forEach(points => {
+        const [startPoint, endPoint] = points.map(p => keypoints[p]);
+        if (startPoint && endPoint) {
+            ctx.beginPath();
+            ctx.moveTo(canvas.width - startPoint.x, startPoint.y);
+            ctx.lineTo(canvas.width - endPoint.x, endPoint.y);
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = 'red';
+            ctx.stroke();
+        }
+    });
 };
 
-
+// start detecting video
 const startVideoAndDetection = async () => {
     setIsPlaying(true);
     isPlayingRef.current = true;
@@ -121,26 +113,26 @@ const startVideoAndDetection = async () => {
             return;
         }
         setCountdown(prevCountdown => prevCountdown - 1);
-    }, 1000);
+        }, 1000);
     };
 
-    const pauseRecording = () => {
-        setIsPlaying(false);
-        isPlayingRef.current = false;
-        clearInterval(detectionInterval);
-        clearInterval(countdownInterval);
-    };
+const pauseRecording = () => {
+    setIsPlaying(false);
+    isPlayingRef.current = false;
+    clearInterval(detectionInterval);
+    clearInterval(countdownInterval);
+};
 
-    const stopRecording = () => {
-        setIsPlaying(false);
-        isPlayingRef.current = false;
-        clearInterval(detectionInterval);
-        clearInterval(countdownInterval);
+const stopRecording = () => {
+    setIsPlaying(false);
+    isPlayingRef.current = false;
+    clearInterval(detectionInterval);
+    clearInterval(countdownInterval);
+
     const video = videoRef.current;
-    //canvasRef.current.width = video.videoWidth; 
-    //canvasRef.current.height = video.videoHeight;
     const stream = video.srcObject;
     const tracks = stream.getTracks();
+
     tracks.forEach(track => track.stop());
     video.srcObject = null;
 
@@ -156,22 +148,14 @@ const saveCSVToLocalDir = async () => {
         });
     });
 
-    // Create a blob out of the CSV content
     const blob = new Blob([csvContent], { type: 'text/csv' });
-    
-    // Create an anchor element and set the blob as its href
     const url = window.URL.createObjectURL(blob);
     const downloadLink = document.createElement('a');
     
-    // Set download attributes
     downloadLink.href = url;
-    downloadLink.download = 'keypointsData.csv'; // You can name the file whatever you'd like
-    
-    // Append the anchor to the body and trigger a click to start download
+    downloadLink.download = 'MoveNetData.csv'; // You can name the file whatever you'd like
     document.body.appendChild(downloadLink);
     downloadLink.click();
-    
-    // Cleanup by removing the anchor and revoking the blob URL
     document.body.removeChild(downloadLink);
     window.URL.revokeObjectURL(url);
 
@@ -190,7 +174,6 @@ const saveCSVToLocalDir = async () => {
     //     console.error('Error saving CSV:', error);
     // }
     };
-
 
 const fetchCSVData = async () => {
     try {
@@ -214,81 +197,79 @@ useEffect(() => {
     }
 }, [countdown]);
 
-function generateMessage(armAngle, dropSpeed, elbowAngle, curlSpeed) {
-    const arm_angle_confidence = `${armAngle}% confident that the forearm is not extended enough on descent`;
-    const drop_speed_confidence = `${dropSpeed}% confident that the forearm is dropping too quickly`;
-    const elbow_angle_confidence = `${elbowAngle}% confident that the elbow is raised too high`;
-    const curl_speed_confidence = `${curlSpeed}% confident that the bicep curl is too fast`;
+// function generateMessage(armAngle, dropSpeed, elbowAngle, curlSpeed) {
+//     const arm_angle_confidence = `${armAngle}% confident that the forearm is not extended enough on descent`;
+//     const drop_speed_confidence = `${dropSpeed}% confident that the forearm is dropping too quickly`;
+//     const elbow_angle_confidence = `${elbowAngle}% confident that the elbow is raised too high`;
+//     const curl_speed_confidence = `${curlSpeed}% confident that the bicep curl is too fast`;
 
-    return arm_angle_confidence + ". " + drop_speed_confidence + ". " + elbow_angle_confidence + ". " + curl_speed_confidence + "."
-}
+//     return arm_angle_confidence + ". " + drop_speed_confidence + ". " + elbow_angle_confidence + ". " + curl_speed_confidence + "."
+// }
 
-const userMessage = generateMessage(armAngle, dropSpeed, elbowAngle, curlSpeed);
+//const userMessage = generateMessage(armAngle, dropSpeed, elbowAngle, curlSpeed);
 
-const openai = new OpenAI({
-        apiKey: "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",
-        dangerouslyAllowBrowser: true
-    });
-    async function getFeedback() {
-        setIsLoading(true);
-        try {
-            const response = await openai.chat.completions.create({
-                model: "gpt-4",
-                messages: [
-                    {
-                    "role": "system",
-                    "content": "You are an AI that generates feedback on how to do a bicep curl for physical therapy. Based on computer vision results, inform the user if they are doing the exercise correctly or incorrectly. The exercise can be wrong in four ways: the angle between the forearm and upper arm is too small, you raised your elbow too high, you extended your forearm too fast on descent, or you are doing the curl too quickly (implying the weight may be too light). If the algorithm is more than 60% confident that the user is wrong in one of these ways, inform the user how they are performing the exercise wrong. If no confidence rating is above 60%, simply tell the user that they are performing the exercise correctly. Limit your response to 100 words. Do not mention the algorithm at all - act as a personal trainer, not an AI."
-                    },
-                    {
-                    "role": "user",
-                    "content": userMessage
-                    }
-                ],
-                temperature: 0.91,
-                max_tokens: 1280,
-                top_p: 1,
-                frequency_penalty: 0,
-                presence_penalty: 0,
-            });
-            console.log(response.choices[0].message.content)
-            setFeedback(response.choices[0].message.content);
-        } catch (error) {
-            console.error("Error fetching feedback:", error);
-        } finally {
-            setIsLoading(false);
-        }
-    }
-    return (
-        <Box display="flex" alignItems="center" justifyContent="center" height="100vh" width="100vw" position="relative">
-        
-            {/* Video and Canvas Section */}
-            <Box position="relative" width="1280px" height="960px">
-                <video ref={videoRef} width="1280" height="960" playsInline style={{ position: 'absolute', top: 0, left: 0, transform: 'ScaleX(-1)' }} />
-                <canvas ref={canvasRef} width="1280" height="960" style={{ position: 'absolute', top: 0, left: 0 }} />
-                <Text fontSize="xl" position="absolute" top="10px" left="10px" zIndex="10">Time Remaining: {countdown >= 0 ? countdown : 0} seconds</Text>
-                
-                <VStack position="absolute" bottom="10px" left="10px" zIndex="10" spacing={5}>
-                    {isPlaying ? (
-                        <>
-                        <Button colorScheme="teal" onClick={pauseRecording}>
-                            Pause
-                        </Button>
-                        <Button colorScheme="red" ml={3} onClick={stopRecording}>
-                            Stop
-                        </Button>
-                        </>
-                    ) : (
-                        <Button colorScheme="teal" onClick={startVideoAndDetection}>
-                        Play
-                        </Button>
-                    )}
-                    <Button ml={3} onClick={fetchCSVData}>
-                        Fetch CSV Data
+// const openai = new OpenAI({
+//         apiKey: "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",
+//         dangerouslyAllowBrowser: true
+//     });
+
+// async function getFeedback() {
+//     setIsLoading(true);
+//     try {
+//         const response = await openai.chat.completions.create({
+//             model: "gpt-4",
+//             messages: [
+//                 {
+//                 "role": "system",
+//                 "content": "You are an AI that generates feedback on how to do a bicep curl for physical therapy. Based on computer vision results, inform the user if they are doing the exercise correctly or incorrectly. The exercise can be wrong in four ways: the angle between the forearm and upper arm is too small, you raised your elbow too high, you extended your forearm too fast on descent, or you are doing the curl too quickly (implying the weight may be too light). If the algorithm is more than 60% confident that the user is wrong in one of these ways, inform the user how they are performing the exercise wrong. If no confidence rating is above 60%, simply tell the user that they are performing the exercise correctly. Limit your response to 100 words. Do not mention the algorithm at all - act as a personal trainer, not an AI."
+//                 },
+//                 {
+//                 "role": "user",
+//                 "content": userMessage
+//                 }
+//             ],
+//             temperature: 0.91,
+//             max_tokens: 1280,
+//             top_p: 1,
+//             frequency_penalty: 0,
+//             presence_penalty: 0,
+//         });
+//         console.log(response.choices[0].message.content)
+//         setFeedback(response.choices[0].message.content);
+//     } catch (error) {
+//         console.error("Error fetching feedback:", error);
+//     } finally {
+//         setIsLoading(false);
+//     }
+// }
+return (
+    <Box display="flex" alignItems="center" justifyContent="center" height="100vh" width="100vw" position="relative">
+        {/* Video and Canvas Section */}
+        <Box position="relative" width="1280px" height="960px">
+            <video ref={videoRef} width="1280" height="960" playsInline style={{ position: 'absolute', top: 0, left: 0, transform: 'ScaleX(-1)' }} />
+            <canvas ref={canvasRef} width="1280" height="960" style={{ position: 'absolute', top: 0, left: 0 }} />
+            <Text fontSize="xl" position="absolute" top="10px" left="10px" zIndex="10">Time Remaining: {countdown >= 0 ? countdown : 0} seconds</Text>
+            <VStack position="absolute" bottom="10px" left="10px" zIndex="10" spacing={5}>
+                {isPlaying ? (
+                    <>
+                    <Button colorScheme="teal" onClick={pauseRecording}>
+                        Pause
                     </Button>
-                </VStack>
-            </Box>
-        
+                    <Button colorScheme="red" ml={3} onClick={stopRecording}>
+                        Stop
+                    </Button>
+                    </>
+                ) : (
+                    <Button colorScheme="teal" onClick={startVideoAndDetection}>
+                    Play
+                    </Button>
+                )}
+                <Button ml={3} onClick={fetchCSVData}>
+                    Fetch CSV Data
+                </Button>
+            </VStack>
         </Box>
+    </Box>
     );
     
 }
