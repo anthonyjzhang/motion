@@ -3,6 +3,7 @@ import * as posedetection from '@tensorflow-models/pose-detection';
 import * as tf from '@tensorflow/tfjs';
 import { Box, Button, Text, VStack, Spinner } from "@chakra-ui/react";
 import OpenAI from 'openai';
+import '../Button.css';
 
 export default function Demo() {
 
@@ -143,7 +144,7 @@ const saveCSVToLocalDir = async () => {
     let csvContent = "";
     keypointsData.forEach(keypoints => {
         keypoints.forEach(keypoint => {
-            const row = [keypoint.name, keypoint.x, keypoint.y, keypoint.score];
+            const row = [keypoint.name, keypoint.x, keypoint.y];
             csvContent += row.join(",") + "\n";
         });
     });
@@ -159,20 +160,20 @@ const saveCSVToLocalDir = async () => {
     document.body.removeChild(downloadLink);
     window.URL.revokeObjectURL(url);
 
-    try {
-        const response = await fetch('/api/saveCSV', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ csvData: csvContent }),
-        });
-        const data = await response.json();
-        console.log(data.message);
-        } 
-    catch (error) {
-        console.error('Error saving CSV:', error);
-    }
+    // try {
+    //     const response = await fetch('/api/saveCSV', {
+    //         method: 'POST',
+    //         headers: {
+    //             'Content-Type': 'application/json',
+    //         },
+    //         body: JSON.stringify({ csvData: csvContent }),
+    //     });
+    //     const data = await response.json();
+    //     console.log(data.message);
+    //     } 
+    // catch (error) {
+    //     console.error('Error saving CSV:', error);
+    // }
     };
 
 const fetchCSVData = async () => {
@@ -249,22 +250,28 @@ return (
             <video ref={videoRef} width="1280" height="960" playsInline style={{ position: 'absolute', top: 0, left: 0, transform: 'ScaleX(-1)' }} />
             <canvas ref={canvasRef} width="1280" height="960" style={{ position: 'absolute', top: 0, left: 0 }} />
             <Text fontSize="xl" position="absolute" top="10px" left="10px" zIndex="10">Time Remaining: {countdown >= 0 ? countdown : 0} seconds</Text>
-            <VStack position="absolute" bottom="10px" left="10px" zIndex="10" spacing={5}>
+            <VStack position="absolute" top="90px" left="10px" zIndex="10" spacing={5}>
                 {isPlaying ? (
                     <>
-                    <Button colorScheme="teal" onClick={pauseRecording}>
+                    <Button 
+                        colorScheme="teal" 
+                        onClick={pauseRecording}
+                        className='btn btn--primary btn--large'>
                         Pause
                     </Button>
-                    <Button colorScheme="red" ml={3} onClick={stopRecording}>
+                    <Button 
+                        colorScheme="red" ml={3} onClick={stopRecording} className='btn btn--primary btn--large'>
                         Stop
                     </Button>
                     </>
                 ) : (
-                    <Button colorScheme="teal" onClick={startVideoAndDetection}>
+                    <Button 
+                        colorScheme="teal" onClick={startVideoAndDetection} className='btn btn--primary btn--large'>
                     Play
                     </Button>
                 )}
-                <Button ml={3} onClick={fetchCSVData}>
+                <Button ml={3} onClick={fetchCSVData} 
+                    className='btn btn--primary btn--large'>
                     Fetch CSV Data
                 </Button>
             </VStack>

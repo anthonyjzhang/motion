@@ -11,7 +11,7 @@ function HeroSection() {
       <video src='/videos/video-1.mp4' autoPlay loop muted playsInline/>
       <div className='hero-content'>
         <h1>The Future of Wellness</h1>
-        <p>Technology makes healthcare more accessible</p>
+        <p>Improving wellness efficiency and accessiblity</p>
         <div className='hero-btns'>
         <Link to="/demo">
           <Button
