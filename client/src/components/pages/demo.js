@@ -1,8 +1,9 @@
 import React, { useRef, useEffect, useState } from 'react';
 import * as posenet from '@tensorflow-models/posenet';
+import * as posedetection from '@tensorflow-models/pose-detection';
 import * as tf from '@tensorflow/tfjs';
+//import * as movenet from '@tensorflow-models/movenet';
 import { Box, Button, Text, VStack, Spinner } from "@chakra-ui/react";
-import '../../App.css';
 
 //import dotenv from 'dotenv
 import OpenAI from 'openai';
@@ -11,7 +12,6 @@ import OpenAI from 'openai';
 //dotenv.config()
 export default function Test() {
     const videoRef = useRef(null);
-
     const canvasRef = useRef(null);
     const [keypointsData, setKeypointsData] = useState([]);
 
@@ -31,23 +31,37 @@ export default function Test() {
 
 useEffect(() => {
     async function setupBackend() {
-        await tf.setBackend('webgl');
-        await tf.ready();
+        try {
+            await tf.setBackend('webgl');
+            await tf.ready();
+        } 
+        catch (error) {
+            console.error("Error setting up TensorFlow backend:", error);
+        }
     }
-  setupBackend();
+    setupBackend();
 }, []);
 
-    useEffect(() => {
-        async function setupCamera() {
+useEffect(() => {
+    async function setupCamera() {
+        try {
             const video = videoRef.current;
-
-            canvasRef.current.width = video.width;
-            canvasRef.current.height = video.height;
             const stream = await navigator.mediaDevices.getUserMedia({ 'video': true });
             video.srcObject = stream;
+            video.onloadedmetadata = () => {
             video.play();
+            canvasRef.current.width = video.videoWidth;
+            canvasRef.current.height = video.videoHeight;
+            const dpr = window.devicePixelRatio || 1;
+            canvasRef.current.style.width = `${video.videoWidth * dpr}px`; 
+            canvasRef.current.style.height = `${video.videoHeight * dpr}px`;
+};
+        } 
+        catch (error) {
+            console.error("Error setting up the camera:", error);
         }
-        setupCamera();
+    }
+    setupCamera();
 }, []);
 
 const drawKeypoints = (keypoints) => {
@@ -57,42 +71,49 @@ const ctx = canvas.getContext('2d');
 ctx.clearRect(0, 0, canvas.width, canvas.height);
 
 // Define the keypoint connections
-const adjacentKeyPoints = posenet.getAdjacentKeyPoints(keypoints, 0.5);
+const adjacentPairs = posedetection.util.getAdjacentPairs(posedetection.SupportedModels.MoveNet);
+
 
 // Draw the keypoints
 keypoints.forEach(keypoint => {
+    const mirroredX = canvas.width - keypoint.x;
     ctx.beginPath();
-    ctx.arc(keypoint.position.x, keypoint.position.y, 5, 0, 2 * Math.PI);
-    ctx.fillStyle = 'white';
+    ctx.arc(mirroredX, keypoint.y, 5, 0, 2 * Math.PI);
+    ctx.fillStyle = 'red';
     ctx.fill();
 });
 
 // Draw the lines
-adjacentKeyPoints.forEach(points => {
-    ctx.beginPath();
-    ctx.moveTo(points[0].position.x, points[0].position.y);
-    ctx.lineTo(points[1].position.x, points[1].position.y);
-    ctx.lineWidth = 2;
-    ctx.strokeStyle = 'white';
-    ctx.stroke();
+adjacentPairs.forEach(points => {
+    const [startPoint, endPoint] = points.map(p => keypoints[p]);
+    if (startPoint && endPoint) {
+        ctx.beginPath();
+        ctx.moveTo(canvas.width - startPoint.x, startPoint.y);
+        ctx.lineTo(canvas.width - endPoint.x, endPoint.y);
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = 'red';
+        ctx.stroke();
+    }
 });
 };
+
 
 const startVideoAndDetection = async () => {
     setIsPlaying(true);
     isPlayingRef.current = true;
 
-    const net = await posenet.load();
+    const net = posedetection.SupportedModels.MoveNet;
+    const detector = await posedetection.createDetector(net);
     detectionInterval = setInterval(async () => {
         if (!isPlayingRef.current) {
             return;
         }
-        const pose = await net.estimateSinglePose(videoRef.current);
-        console.log(pose.keypoints);
+        const pose = await detector.estimatePoses(videoRef.current)
+        console.log(pose[0].keypoints);
         
-        drawKeypoints(pose.keypoints);
-        setKeypointsData(prevData => [...prevData, pose.keypoints]);
-    }, 1000/30);
+        drawKeypoints(pose[0].keypoints);
+        setKeypointsData(prevData => [...prevData, pose[0].keypoints]);
+    }, 50);
 
     countdownInterval = setInterval(() => {
         if (countdown <= 0 || !isPlayingRef.current) {
@@ -116,6 +137,8 @@ const startVideoAndDetection = async () => {
         clearInterval(detectionInterval);
         clearInterval(countdownInterval);
     const video = videoRef.current;
+    //canvasRef.current.width = video.videoWidth; 
+    //canvasRef.current.height = video.videoHeight;
     const stream = video.srcObject;
     const tracks = stream.getTracks();
     tracks.forEach(track => track.stop());
@@ -125,67 +148,71 @@ const startVideoAndDetection = async () => {
 };
 
 const saveCSVToLocalDir = async () => {
-    let csvContent = "data:text/csv;charset=utf-8,";
+    let csvContent = "";
     keypointsData.forEach(keypoints => {
         keypoints.forEach(keypoint => {
-            const row = [keypoint.part, keypoint.position.x, keypoint.position.y];
+            const row = [keypoint.name, keypoint.x, keypoint.y];
             csvContent += row.join(",") + "\n";
         });
     });
 
-    try {
-        const response = await fetch('/api/saveCSV', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ csvData: csvContent }),
-        });
-        const data = await response.json();
-        console.log(data.message);
-        } 
-    catch (error) {
-        console.error('Error saving CSV:', error);
-    }
+    // Create a blob out of the CSV content
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    
+    // Create an anchor element and set the blob as its href
+    const url = window.URL.createObjectURL(blob);
+    const downloadLink = document.createElement('a');
+    
+    // Set download attributes
+    downloadLink.href = url;
+    downloadLink.download = 'keypointsData.csv'; // You can name the file whatever you'd like
+    
+    // Append the anchor to the body and trigger a click to start download
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+    
+    // Cleanup by removing the anchor and revoking the blob URL
+    document.body.removeChild(downloadLink);
+    window.URL.revokeObjectURL(url);
+
+    // try {
+    //     const response = await fetch('/api/saveCSV', {
+    //         method: 'POST',
+    //         headers: {
+    //             'Content-Type': 'application/json',
+    //         },
+    //         body: JSON.stringify({ csvData: csvContent }),
+    //     });
+    //     const data = await response.json();
+    //     console.log(data.message);
+    //     } 
+    // catch (error) {
+    //     console.error('Error saving CSV:', error);
+    // }
     };
 
-// const fetchCSVData = async () => {
-//     try {
-//         const response = await fetch('/api/saveCSV', {
-//             method: 'GET',
-//             headers: {
-//                 'Content-Type': 'application/json',
-//             },
-//             body: JSON.stringify({ csvData: csvContent }),
-//         });
-//         const csvData = await response.text();
-//         console.log(csvData);
-//     } 
-//     catch (error) {
-//         console.error('Error fetching CSV:', error);
-//     }
-//     };
 
 const fetchCSVData = async () => {
     try {
-      const response = await fetch('/api/saveCSV', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        }
-      });
-      const csvData = await response.text();
-      console.log(csvData);
-    } catch (error) {
-      console.error('Error fetching CSV:', error);
+        const response = await fetch('/api/saveCSV', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+        const csvData = await response.text();
+        console.log(csvData);
+    } 
+    catch (error) {
+        console.error('Error fetching CSV:', error);
     }
-  };
+};
 
 useEffect(() => {
     if (countdown <= 0) {
         saveCSVToLocalDir();
     }
-    }, [countdown]);
+}, [countdown]);
 
 function generateMessage(armAngle, dropSpeed, elbowAngle, curlSpeed) {
     const arm_angle_confidence = `${armAngle}% confident that the forearm is not extended enough on descent`;
@@ -202,7 +229,6 @@ const openai = new OpenAI({
         apiKey: "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",
         dangerouslyAllowBrowser: true
     });
-    
     async function getFeedback() {
         setIsLoading(true);
         try {
@@ -233,50 +259,35 @@ const openai = new OpenAI({
         }
     }
     return (
-        <Box p={5} display="flex" flexDirection="column" height="100vh">
-    
-        {/* Video and Canvas Section */}
-        <Box flex="6" display="flex" alignItems="flex-start" marginBottom={5}>
-            <Box flex="1" marginRight={5} display="flex" flexDirection="column" alignItems="flex-start" position="relative">
-            <video ref={videoRef} width="1280" height="960" playsInline style={{ position: 'absolute', top: 0, left: 0 }} />
-            <canvas ref={canvasRef} style={{ position: 'absolute', top: 0, left: 0 }} />
-            <Text fontSize="xl" marginTop={3}>Time Remaining: {countdown >= 0 ? countdown : 0} seconds</Text>
+        <Box display="flex" alignItems="center" justifyContent="center" height="100vh" width="100vw" position="relative">
+        
+            {/* Video and Canvas Section */}
+            <Box position="relative" width="1280px" height="960px">
+                <video ref={videoRef} width="1280" height="960" playsInline style={{ position: 'absolute', top: 0, left: 0, transform: 'ScaleX(-1)' }} />
+                <canvas ref={canvasRef} width="1280" height="960" style={{ position: 'absolute', top: 0, left: 0 }} />
+                <Text fontSize="xl" position="absolute" top="10px" left="10px" zIndex="10">Time Remaining: {countdown >= 0 ? countdown : 0} seconds</Text>
+                
+                <VStack position="absolute" bottom="10px" left="10px" zIndex="10" spacing={5}>
+                    {isPlaying ? (
+                        <>
+                        <Button colorScheme="teal" onClick={pauseRecording}>
+                            Pause
+                        </Button>
+                        <Button colorScheme="red" ml={3} onClick={stopRecording}>
+                            Stop
+                        </Button>
+                        </>
+                    ) : (
+                        <Button colorScheme="teal" onClick={startVideoAndDetection}>
+                        Play
+                        </Button>
+                    )}
+                    <Button ml={3} onClick={fetchCSVData}>
+                        Fetch CSV Data
+                    </Button>
+                </VStack>
             </Box>
-            <VStack flex="2" spacing={5}>
-            {isPlaying ? (
-                <>
-                <Button colorScheme="teal" onClick={pauseRecording}>
-                    Pause
-                </Button>
-                <Button colorScheme="red" ml={3} onClick={stopRecording}>
-                    Stop
-                </Button>
-                </>
-            ) : (
-                <Button colorScheme="teal" onClick={startVideoAndDetection}>
-                Play
-                </Button>
-            )}
-            <Button ml={3} onClick={fetchCSVData}>
-                Fetch CSV Data
-            </Button>
-            </VStack>
-        </Box> 
-        <Box flex="4" display="flex" flexDirection="column" alignItems="center" justifyContent="center">
-            <Button ml={3} onClick={getFeedback}>
-                Check Feedback
-            </Button>
-            <Box width="100%" p={5} marginTop={3} boxShadow="xl" borderRadius="md" bg="white" position="relative">
-            {isLoading ? (
-                <Box position="absolute" top="50%" left="50%" transform="translate(-50%, -50%)">
-                <Spinner size="xl" />
-                </Box>
-            ) : (
-                <Text fontSize="md">{feedback}</Text>
-            )}
-            </Box>
-        </Box>
-    
+        
         </Box>
     );
     
