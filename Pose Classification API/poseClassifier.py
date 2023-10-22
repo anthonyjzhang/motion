@@ -1,6 +1,6 @@
 import io
 import random
-from flask import Flask, request, jsonify, Response
+from flask import Flask, request, Response
 import pandas as pd
 import tensorflow as tf
 from tensorflow import keras
@@ -48,8 +48,12 @@ def get_inference():
     # Predicts yoga pose
     prediction = model.predict(first_row_df)
 
+    # Finds max confidence value
     maxValue = max(prediction[0])
-    indexOfClassification = np.where(prediction[0] == maxValue)
+    if maxValue < 0.83: # Checks if the model prediction is confident enough with its answer
+        indexOfClassification = -1 # Indicates too low confidence (needs therapy)
+    else:
+        indexOfClassification = np.where(prediction[0] == maxValue) # Finds index for pose with max confidence
 
     # Create a response object that returns the index of the max confidence
     response = Response(str(indexOfClassification[0]))
