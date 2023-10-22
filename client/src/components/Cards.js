@@ -21,8 +21,6 @@ function Cards() {
               label='Beginner'
               path='/demo'
             />
-          </ul>
-          <ul className='cards__items'>
             <CardItem
               src='images/cobra.jpg'
               text='Cobra Pose'
