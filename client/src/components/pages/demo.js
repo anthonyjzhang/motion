@@ -249,7 +249,36 @@ return (
         <Box position="relative" width="1280px" height="960px">
             <video ref={videoRef} width="1280" height="960" playsInline style={{ position: 'absolute', top: 0, left: 0, transform: 'ScaleX(-1)' }} />
             <canvas ref={canvasRef} width="1280" height="960" style={{ position: 'absolute', top: 0, left: 0 }} />
-            <Text fontSize="xl" position="absolute" top="10px" left="10px" zIndex="10">Time Remaining: {countdown >= 0 ? countdown : 0} seconds</Text>
+            
+            <Text 
+            fontSize="xl" 
+            position="absolute" 
+            top="90px" 
+            left="1020px" 
+            zIndex="100" 
+            padding="5px" 
+            bgColor="rgba(0, 0, 0, 0.5)" // semi-transparent black background
+            color="white"
+            fontFamily="'Arial', sans-serif" // you can change this to any font you like
+            >
+                Downward Dog
+            </Text>
+
+            <Text 
+            fontSize="xl" 
+            position="absolute" 
+            top="130px" 
+            left="920px" 
+            zIndex="100" 
+            padding="5px" 
+            bgColor="rgba(0, 0, 0, 0.5)" // semi-transparent black background
+            color="white"
+            fontFamily="'Arial', sans-serif" // you can change this to any font you like
+            >
+                Try to move Slower, You're moving too fast.
+            </Text>
+
+
             <VStack position="absolute" top="90px" left="10px" zIndex="10" spacing={5}>
                 {isPlaying ? (
                     <>
