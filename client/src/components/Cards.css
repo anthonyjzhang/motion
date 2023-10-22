@@ -29,7 +29,8 @@ h1 {
   display: flex;
   flex: 1;
   margin: 0 1rem;
-  border-radius: 10px;
+  border-radius: 20px;
+  width: 240px;
 }
 
 .cards__item__link {
