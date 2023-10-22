@@ -7,6 +7,7 @@ from tensorflow import keras
 from keras.models import load_model
 import numpy as np
 import torch
+import openai
 from pose_classifier import PoseClassifier
 
 app = Flask(__name__)
@@ -38,43 +39,63 @@ warrior_classifier = PoseClassifier()
 warrior_classifier.load_state_dict(torch.load(WARRIOR_CLASSIFIER_PATH))
 warrior_classifier.eval()
 
-exercise_classes = {
-    0: "chair",
-    1: "cobra",
-    2: "dog",
-    3: "tree",
-    4: "warrior"
-}
+exercise_classes = {0: "chair", 1: "cobra", 2: "dog", 3: "tree", 4: "warrior"}
 
-chair_index = {
-    0: "arms too out, not up",
-    1: "correct",
-    2: "leg angle too wide"
-}
+chair_index = {0: "arms too out, not up", 1: "correct", 2: "leg angle too wide"}
 
 cobra_index = {
     0: "up and down too fast",
     1: "correct",
-    2: "lower body moving up as well"
+    2: "lower body moving up as well",
 }
 
-dog_index = {
-    0: "legs not straight",
-    1: "butt too low",
-    2: "correct"
-}
+dog_index = {0: "legs not straight", 1: "butt too low", 2: "correct"}
 
 tree_index = {
     0: "hands moving up and down too fast",
     1: "correct",
-    2: "unbalanced and wobbling"
+    2: "unbalanced and wobbling",
 }
 
-warrior_index = {
-    0: "correct",
-    1: "hands too wide",
-    2: "legs too wide"
-}
+warrior_index = {0: "correct", 1: "hands too wide", 2: "legs too wide"}
+
+
+def generate_message(exercise, failure_type):
+    pose = exercise[0].upper() + exercise[1:] + " Pose"
+
+    if exercise is None:
+        return "Cannot identify exercise. Please make sure the exercise is in our database."
+    else:
+        if failure_type is "correct":
+            ret = "Amazing " + exercise + " pose! Maintain this form."
+            return pose, ret
+        message_content = (
+            "The user is doing a "
+            + exercise
+            + " yoga pose. However, the user is failing because of this failure type for the "
+            + exercise
+            + " pose:"
+            + failure_type
+            + " Based on this failure type, give the user some short advice on how to fix their form."
+        )
+
+    openai.api_key = "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"
+    response = openai.ChatCompletion.create(
+        model="gpt-4",  # Change to an appropriate chat model you want to use
+        messages=[
+            {
+                "role": "system",
+                "content": "You are an assistant that gives very short feedback for yoga, physical therapy, and workout exercises given a specific exercise and a potential failure type. Respond in phrases that must be complete. Your response must be below 15 words. End every phrase with a period",
+            },
+            {"role": "user", "content": message_content},
+        ],
+        max_tokens=20,
+        temperature=0.2,
+    )
+    feedback = response["choices"][0]["message"]["content"]
+    filtered_feedback = feedback.rsplit(".", 1)[0] + "."
+    return pose, filtered_feedback
+
 
 def reshape_data(df_chunk):
     reshaped_dict = {}
@@ -84,6 +105,7 @@ def reshape_data(df_chunk):
         reshaped_dict[row["name"] + "_score"] = row["score"]
 
     return reshaped_dict
+
 
 def identify_exercise(df):
     # Split the DataFrame into 10 chunks of 17 rows each
@@ -107,6 +129,7 @@ def identify_exercise(df):
     # Identify predicted class
     return prediction[0].argmax()
 
+
 def predict_status(exercise_idx, df):
     # Split the DataFrame into 10 chunks of 17 rows each
     chunks = [df.iloc[i : i + 17] for i in range(0, df.shape[0], 17)]
@@ -117,7 +140,6 @@ def predict_status(exercise_idx, df):
     # Convert the list of dictionaries to a DataFrame
     reshaped_df = pd.DataFrame(reshaped_data_list)
     tensor = torch.tensor(reshaped_df.values, dtype=torch.float32).unsqueeze(0)
-    # print(tensor.shape)
 
     if exercise_idx == 0:
         prediction = chair_classifier(tensor)
@@ -142,6 +164,7 @@ def predict_status(exercise_idx, df):
     else:
         return "unknown"
 
+
 @app.route("/getInference", methods=["POST"])
 def get_inference():
     # Get the data from the POST request
@@ -155,11 +178,15 @@ def get_inference():
     # Identify status of exercise
     pred_status = predict_status(pred_exercise_idx, df)
 
+    # generate message using openai
+    _, feedback = generate_message(pred_exercise, pred_status)
+
     # Create a response object that returns the index of the max confidence
     response = {}
     response["Exercise"] = pred_exercise
-    response["Status"] = pred_status
+    response["Feedback"] = feedback
     return response
+
 
 if __name__ == "__main__":
     app.run(debug=True)

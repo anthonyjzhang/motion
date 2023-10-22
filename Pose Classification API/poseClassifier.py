@@ -30,7 +30,6 @@ def generate_message(exercise, failure_type):
         temperature = 0.2
     )
     feedback = response['choices'][0]['message']['content']
-    #print(feedback)
     filtered_feedback = feedback.rsplit('.', 1)[0] + '.'
     return pose, filtered_feedback
 
