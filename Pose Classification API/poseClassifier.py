@@ -8,29 +8,6 @@ import openai
 
 app = Flask(__name__)
 
-
-# Example usage for incorrect pose: generate_GPT_message("moving too fast")
-# reason should be left blank if the pose is correct
-
-def generate_GPT_message(reason=None):
-    #GPT4 much more preferable for good answers, may take too long however.
-    if reason is None:
-        gptInput = "I have created a machine learning model that identifies what yoga position someone is doing and if they're doing it correctly, or if they're not doing it correctly, we identify what they did wrong. Please generate a 30 word message for the user politely stating that they are doing the pose correctly and supporting them. Do not say anything else besides this message to the user, and do not add quotation marks."
-    else:
-        gptInput = "I have created a machine learning model that identifies what yoga position someone is doing and if they're doing it correctly, or if they're not doing it correctly, we identify what they did wrong. Please generate a 30 word message for the user politely stating that they are doing the pose wrong because " + reason + "and supporting them. Do not say anything else besides this message to the user, and do not add quotation marks."
-
-    openai.api_key = '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'
-
-    # Sends a prompt to ChatGPT
-    response = openai.Completion.create(
-        engine="text-davinci-002",  # Can change if needed
-        prompt=gptInput,
-        max_tokens=30  # This controls the maximum length of the response
-    )
-
-    # Print the response
-    return response.choices[0].text.strip()
-
 def generate_message(exercise, failure_type):
     pose =  exercise[0].upper() + exercise[1:] + " Pose"    
 
