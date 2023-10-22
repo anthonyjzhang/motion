@@ -4,6 +4,8 @@ import * as tf from '@tensorflow/tfjs';
 import { Box, Button, Text, VStack, Spinner } from "@chakra-ui/react";
 import OpenAI from 'openai';
 import '../Button.css';
+import '../Cards.css';
+import CardItem from '../CardItem';
 
 export default function Demo() {
 
@@ -249,31 +251,50 @@ return (
         <Box position="relative" width="1280px" height="960px">
             <video ref={videoRef} width="1280" height="960" playsInline style={{ position: 'absolute', top: 0, left: 0, transform: 'ScaleX(-1)' }} />
             <canvas ref={canvasRef} width="1280" height="960" style={{ position: 'absolute', top: 0, left: 0 }} />
-            
-            <Text 
+
+            <img 
+                src="images/chair.jpg" 
+                alt="an image of a yoga position" 
+                style={{
+                    position: 'absolute',
+                    top: '100px', 
+                    left: '1000px', 
+                    zIndex: '100',
+                    width: '250px',  // adjust as necessary
+                    height: '180px'  // adjust as necessary
+                }}
+            />
+
+            <Text
+            style={{
+                fontFamily: "'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif"
+            }}
             fontSize="xl" 
             position="absolute" 
-            top="90px" 
-            left="1020px" 
+            top="290px" 
+            left="1050px" 
             zIndex="100" 
             padding="5px" 
             bgColor="rgba(0, 0, 0, 0.5)" // semi-transparent black background
             color="white"
-            fontFamily="'Arial', sans-serif" // you can change this to any font you like
             >
-                Downward Dog
+                Downward Dog Pose
             </Text>
 
-            <Text 
+            <Text
+            style={{
+                fontFamily: "'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif"
+            }} 
             fontSize="xl" 
             position="absolute" 
             top="130px" 
-            left="920px" 
+            left="450px" 
             zIndex="100" 
             padding="5px" 
             bgColor="rgba(0, 0, 0, 0.5)" // semi-transparent black background
             color="white"
-            fontFamily="'Arial', sans-serif" // you can change this to any font you like
+            fontFamily="'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande',
+            'Lucida Sans', Arial, sans-serif" // you can change this to any font you like
             >
                 Try to move Slower, You're moving too fast.
             </Text>
