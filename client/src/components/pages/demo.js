@@ -144,7 +144,7 @@ const saveCSVToLocalDir = async () => {
     let csvContent = "";
     keypointsData.forEach(keypoints => {
         keypoints.forEach(keypoint => {
-            const row = [keypoint.name, keypoint.x, keypoint.y];
+            const row = [keypoint.name, keypoint.x, keypoint.y, keypoint.score];
             csvContent += row.join(",") + "\n";
         });
     });

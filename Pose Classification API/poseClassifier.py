@@ -31,24 +31,33 @@ def generate_GPT_message(reason=None):
     # Print the response
     return response.choices[0].text.strip()
 
-def generate_message(reason=None):
-    #GPT4 much more preferable for good answers, may take too long however.
-    if reason is None:
-        gptInput = "I have created a machine learning model that identifies what yoga position someone is doing and if they're doing it correctly, or if they're not doing it correctly, we identify what they did wrong. Please generate a 30 word message for the user politely stating that they are doing the pose correctly and supporting them. Do not say anything else besides this message to the user, and do not add quotation marks."
+def generate_message(exercise, failure_type):
+    pose =  exercise[0].upper() + exercise[1:] + " Pose"    
+
+    if exercise is None:
+        return "Cannot identify exercise. Please make sure the exercise is in our database."
     else:
-        gptInput = "I have created a machine learning model that identifies what yoga position someone is doing and if they're doing it correctly, or if they're not doing it correctly, we identify what they did wrong. Please generate a 30 word message for the user politely stating that they are doing the pose wrong because " + reason + "and supporting them. Do not say anything else besides this message to the user, and do not add quotation marks."
+        if failure_type is None:
+            ret = "Amazing " + exercise + " pose! Maintain this form."
+            return pose, ret
+        message_content = "The user is doing a " + exercise + " yoga pose. However, the user is failing because of this failure type for the " +  exercise + " pose:" + failure_type + " Based on this failure type, give the user some short advice on how to fix their form."
 
     openai.api_key = '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'
-
-    # Sends a prompt to ChatGPT
-    response = openai.Completion.create(
-        engine="text-davinci-002",  # Can change if needed
-        prompt=gptInput,
-        max_tokens=30  # This controls the maximum length of the response
+    response = openai.ChatCompletion.create(
+        model="gpt-4",  # Change to an appropriate chat model you want to use
+        messages=[
+            {"role": "system", "content": "You are an assistant that gives very short feedback for yoga, physical therapy, and workout exercises given a specific exercise and a potential failure type. Respond in phrases that must be complete. Your response must be below 15 words. End every phrase with a period"},
+            {"role": "user", "content": message_content}
+        ],
+        max_tokens=20,
+        temperature = 0.2
     )
+    feedback = response['choices'][0]['message']['content']
+    #print(feedback)
+    filtered_feedback = feedback.rsplit('.', 1)[0] + '.'
+    return pose, filtered_feedback
 
-    # Print the response
-    return response.choices[0].text.strip()
+print(generate_message("cobra", "too fast"))
 
 def reshape_data(df_chunk):
     reshaped_dict = {}
