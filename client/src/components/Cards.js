@@ -5,39 +5,39 @@ import CardItem from './CardItem';
 function Cards() {
   return (
     <div className='cards'>
-      <h1>Check out these EPIC Workouts!</h1>
+      <h1>We are able to detect the following moves</h1>
       <div className='cards__container'>
         <div className='cards__wrapper'>
           <ul className='cards__items'>
             <CardItem
-              src='images/img-9.jpg'
-              text='Bench Press'
+              src='images/chair.jpg'
+              text='Chair Pose'
               label='Intermedium'
               path='/demo'
             />
             <CardItem
-              src='images/img-2.jpg'
-              text='Arm Curl'
+              src='images/dog.jpg'
+              text='Dog Pose'
               label='Beginner'
               path='/demo'
             />
           </ul>
           <ul className='cards__items'>
             <CardItem
-              src='images/img-3.jpg'
-              text='Deadlift'
+              src='images/cobra.jpg'
+              text='Cobra Pose'
               label='Intermedium'
               path='/demo'
             />
             <CardItem
-              src='images/img-4.jpg'
-              text='Arnold Press'
+              src='images/tree.jpg'
+              text='Tree Pose'
               label='Advanced'
               path='/demo'
             />
             <CardItem
-              src='images/img-8.jpg'
-              text='Jumpping Jacks'
+              src='images/warrior.jpg'
+              text='Warrier Pose'
               label='Beginner'
               path='/demo'
             />
