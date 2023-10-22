@@ -14,15 +14,17 @@ export default function Demo() {
     const [keypointsData, setKeypointsData] = useState([]);
 
     const isPlayingRef = useRef(null);
-    const [countdown, setCountdown] = useState(30);
+    // const [countdown, setCountdown] = useState(30);
     const [isPlaying, setIsPlaying] = useState(false);
     const batchesRef = useRef([]);
     const [feedback, setFeedback] = useState("");
-    const [isLoading, setIsLoading] = useState(false);
-    const [armAngle, setArmAngle] = useState(Number);
-    const [dropSpeed, setDropSpeed] = useState(Number);
-    const [elbowAngle, setElbowAngle] = useState(Number);
-    const [curlSpeed, setCurlSpeed] = useState(Number);
+    // const [isLoading, setIsLoading] = useState(false);
+    // const [armAngle, setArmAngle] = useState(Number);
+    // const [dropSpeed, setDropSpeed] = useState(Number);
+    // const [elbowAngle, setElbowAngle] = useState(Number);
+    // const [curlSpeed, setCurlSpeed] = useState(Number);
+    const [message, setMessage] = useState("Welcome - you've taken the first step to improving your wellness!");
+    const [exercise, setExercise] = useState(null);  
 
     let countdownInterval;
     let detectionInterval;
@@ -88,6 +90,12 @@ const convertKeyPointsData = (keyPointsData) => {
     });
 };
 
+const clearCanvas = () => {
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+};
+
 const drawKeypoints = (keypoints) => {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
@@ -109,7 +117,7 @@ const drawKeypoints = (keypoints) => {
             ctx.moveTo(canvas.width - startPoint.x, startPoint.y);
             ctx.lineTo(canvas.width - endPoint.x, endPoint.y);
             ctx.lineWidth = 2;
-            ctx.strokeStyle = 'red';
+            ctx.strokeStyle = 'blue';
             ctx.stroke();
         }
     });
@@ -117,6 +125,7 @@ const drawKeypoints = (keypoints) => {
 
 // start detecting video
 const startVideoAndDetection = async () => {
+    setMessage("Please wait!");
     setIsPlaying(true);
     isPlayingRef.current = true;
 
@@ -128,11 +137,23 @@ const startVideoAndDetection = async () => {
         }
         const pose = await detector.estimatePoses(videoRef.current)
         
-        drawKeypoints(pose[0].keypoints);
-        setKeypointsData(prevData => {
-            const updatedData = [...prevData, pose[0].keypoints];
-            return updatedData;
-        });
+        if (!pose || !pose.length || pose.length === 0) {
+            // No pose detected
+            console.log("No subject detected.");
+            // Optional: Add a message to the UI to inform the user
+            setMessage("No subject detected. Please ensure you are in the frame.");
+            clearCanvas();
+            return; 
+        }
+
+        if (pose.length) {
+            setMessage("Analyzing motion.");
+            drawKeypoints(pose[0].keypoints);
+            setKeypointsData(prevData => {
+                const updatedData = [...prevData, pose[0].keypoints];
+                return updatedData;
+            });
+        }
         //console.log(keypointsData,keypointsData.length)
         
 
@@ -149,10 +170,12 @@ const startVideoAndDetection = async () => {
 
 
 const pauseRecording = () => {
+    setMessage("You have paused your session");
     setIsPlaying(false);
     isPlayingRef.current = false;
     clearInterval(detectionInterval);
     clearInterval(countdownInterval);
+    clearCanvas(); 
 };
 
 const stopRecording = () => {
@@ -160,13 +183,16 @@ const stopRecording = () => {
     isPlayingRef.current = false;
     clearInterval(detectionInterval);
     clearInterval(countdownInterval);
+    clearCanvas(); 
 
     const video = videoRef.current;
     const stream = video.srcObject;
     const tracks = stream.getTracks();
 
     tracks.forEach(track => track.stop());
-    video.srcObject = null;
+    setTimeout(() => {
+        video.srcObject = null;
+    }, 100);
 };
 
 // const saveCSVToLocalDir = async () => {
@@ -205,21 +231,21 @@ const stopRecording = () => {
     // }
     //};
 
-const fetchCSVData = async () => {
-    try {
-        const response = await fetch('/api/saveCSV', {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-            }
-        });
-        const csvData = await response.text();
-        console.log(csvData);
-    } 
-    catch (error) {
-        console.error('Error fetching CSV:', error);
-    }
-};
+// const fetchCSVData = async () => {
+//     try {
+//         const response = await fetch('/api/saveCSV', {
+//             method: 'GET',
+//             headers: {
+//                 'Content-Type': 'application/json',
+//             }
+//         });
+//         const csvData = await response.text();
+//         console.log(csvData);
+//     } 
+//     catch (error) {
+//         console.error('Error fetching CSV:', error);
+//     }
+// };
 
 // useEffect(() => {
 //     if (countdown <= 0) {
@@ -280,7 +306,7 @@ return (
             <canvas ref={canvasRef} width="1280" height="960" style={{ position: 'absolute', top: 0, left: 0 }} />
 
             <img 
-                src="images/chair.jpg" 
+                src="images/${exercise}.jpg" 
                 alt="an image of a yoga position" 
                 style={{
                     position: 'absolute',
@@ -305,7 +331,7 @@ return (
             bgColor="rgba(0, 0, 0, 0.5)" // semi-transparent black background
             color="white"
             >
-                Downward Dog Pose
+                {exercise}
             </Text>
 
             <Text
@@ -323,7 +349,7 @@ return (
             fontFamily="'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande',
             'Lucida Sans', Arial, sans-serif" // you can change this to any font you like
             >
-                Try to move Slower, You're moving too fast.
+                {message}
             </Text>
 
 
@@ -336,10 +362,10 @@ return (
                         className='btn btn--primary btn--large'>
                         Pause
                     </Button>
-                    <Button 
+                    {/* <Button 
                         colorScheme="red" ml={3} onClick={stopRecording} className='btn btn--primary btn--large'>
                         Stop
-                    </Button>
+                    </Button> */}
                     </>
                 ) : (
                     <Button 
@@ -347,10 +373,6 @@ return (
                     Play
                     </Button>
                 )}
-                <Button ml={3} onClick={fetchCSVData} 
-                    className='btn btn--primary btn--large'>
-                    Fetch CSV Data
-                </Button>
             </VStack>
         </Box>
     </Box>
