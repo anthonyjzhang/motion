@@ -42,3 +42,20 @@
   color: #fff;
   font-size: 100px;
 }
+
+.products-page {
+  padding: 20px;
+  font-family: Arial, sans-serif;
+}
+
+.products-page h1, .products-page h2 {
+  color: #333;
+  margin-top: 20px;
+}
+
+.products-page p, .products-page ul {
+  color: #555;
+  margin-bottom: 20px;
+}
+
+/* Add more styles as needed */
