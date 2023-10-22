@@ -143,7 +143,7 @@ const saveCSVToLocalDir = async () => {
     let csvContent = "";
     keypointsData.forEach(keypoints => {
         keypoints.forEach(keypoint => {
-            const row = [keypoint.name, keypoint.x, keypoint.y];
+            const row = [keypoint.name, keypoint.x, keypoint.y, keypoint.score];
             csvContent += row.join(",") + "\n";
         });
     });
@@ -159,20 +159,20 @@ const saveCSVToLocalDir = async () => {
     document.body.removeChild(downloadLink);
     window.URL.revokeObjectURL(url);
 
-    // try {
-    //     const response = await fetch('/api/saveCSV', {
-    //         method: 'POST',
-    //         headers: {
-    //             'Content-Type': 'application/json',
-    //         },
-    //         body: JSON.stringify({ csvData: csvContent }),
-    //     });
-    //     const data = await response.json();
-    //     console.log(data.message);
-    //     } 
-    // catch (error) {
-    //     console.error('Error saving CSV:', error);
-    // }
+    try {
+        const response = await fetch('/api/saveCSV', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ csvData: csvContent }),
+        });
+        const data = await response.json();
+        console.log(data.message);
+        } 
+    catch (error) {
+        console.error('Error saving CSV:', error);
+    }
     };
 
 const fetchCSVData = async () => {
