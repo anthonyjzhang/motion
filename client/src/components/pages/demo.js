@@ -16,7 +16,7 @@ export default function Demo() {
     const isPlayingRef = useRef(null);
     const [countdown, setCountdown] = useState(30);
     const [isPlaying, setIsPlaying] = useState(false);
-
+    const batchesRef = useRef([]);
     const [feedback, setFeedback] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const [armAngle, setArmAngle] = useState(Number);
@@ -65,6 +65,29 @@ useEffect(() => {
     setupCamera();
 }, []);
 
+useEffect(() => {
+    console.log(keypointsData,keypointsData.length)
+    if (keypointsData.length === 10) {
+        console.log("here2");
+        batchesRef.current.push(keypointsData);
+        console.log("convert",keypointsData);
+        const convertedData = convertKeyPointsData(keypointsData);
+        console.log(convertedData); 
+        setKeypointsData([]);
+    }
+}, [keypointsData]);
+
+const convertKeyPointsData = (keyPointsData) => {
+    return keyPointsData.flat().map(obj => {
+        return {
+            y: obj.y,
+            x: obj.x,
+            score: obj.score,
+            name: obj.name
+        };
+    });
+};
+
 const drawKeypoints = (keypoints) => {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
@@ -104,20 +127,26 @@ const startVideoAndDetection = async () => {
             return;
         }
         const pose = await detector.estimatePoses(videoRef.current)
-        console.log(pose[0].keypoints);
         
         drawKeypoints(pose[0].keypoints);
-        setKeypointsData(prevData => [...prevData, pose[0].keypoints]);
+        setKeypointsData(prevData => {
+            const updatedData = [...prevData, pose[0].keypoints];
+            return updatedData;
+        });
+        //console.log(keypointsData,keypointsData.length)
+        
+
     }, 50);
 
-    countdownInterval = setInterval(() => {
-        if (countdown <= 0 || !isPlayingRef.current) {
-            clearInterval(countdownInterval);
-            return;
-        }
-        setCountdown(prevCountdown => prevCountdown - 1);
-        }, 1000);
+    // countdownInterval = setInterval(() => {
+    //     if (countdown <= 0 || !isPlayingRef.current) {
+    //         clearInterval(countdownInterval);
+    //         return;
+    //     }
+    //     setCountdown(prevCountdown => prevCountdown - 1);
+    //     }, 1000);
     };
+
 
 const pauseRecording = () => {
     setIsPlaying(false);
@@ -138,29 +167,27 @@ const stopRecording = () => {
 
     tracks.forEach(track => track.stop());
     video.srcObject = null;
-
-    saveCSVToLocalDir();
 };
 
-const saveCSVToLocalDir = async () => {
-    let csvContent = "";
-    keypointsData.forEach(keypoints => {
-        keypoints.forEach(keypoint => {
-            const row = [keypoint.name, keypoint.x, keypoint.y, keypoint.score];
-            csvContent += row.join(",") + "\n";
-        });
-    });
+// const saveCSVToLocalDir = async () => {
+//     let csvContent = "";
+//     keypointsData.forEach(keypoints => {
+//         keypoints.forEach(keypoint => {
+//             const row = [keypoint.name, keypoint.x, keypoint.y, keypoint.score];
+//             csvContent += row.join(",") + "\n";
+//         });
+//     });
 
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const downloadLink = document.createElement('a');
+//     const blob = new Blob([csvContent], { type: 'text/csv' });
+//     const url = window.URL.createObjectURL(blob);
+//     const downloadLink = document.createElement('a');
     
-    downloadLink.href = url;
-    downloadLink.download = 'MoveNetData.csv'; // You can name the file whatever you'd like
-    document.body.appendChild(downloadLink);
-    downloadLink.click();
-    document.body.removeChild(downloadLink);
-    window.URL.revokeObjectURL(url);
+//     downloadLink.href = url;
+//     downloadLink.download = 'MoveNetData.csv'; // You can name the file whatever you'd like
+//     document.body.appendChild(downloadLink);
+//     downloadLink.click();
+//     document.body.removeChild(downloadLink);
+//     window.URL.revokeObjectURL(url);
 
     // try {
     //     const response = await fetch('/api/saveCSV', {
@@ -176,7 +203,7 @@ const saveCSVToLocalDir = async () => {
     // catch (error) {
     //     console.error('Error saving CSV:', error);
     // }
-    };
+    //};
 
 const fetchCSVData = async () => {
     try {
@@ -194,11 +221,11 @@ const fetchCSVData = async () => {
     }
 };
 
-useEffect(() => {
-    if (countdown <= 0) {
-        saveCSVToLocalDir();
-    }
-}, [countdown]);
+// useEffect(() => {
+//     if (countdown <= 0) {
+//         saveCSVToLocalDir();
+//     }
+// }, [countdown]);
 
 // function generateMessage(armAngle, dropSpeed, elbowAngle, curlSpeed) {
 //     const arm_angle_confidence = `${armAngle}% confident that the forearm is not extended enough on descent`;

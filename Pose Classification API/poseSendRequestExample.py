@@ -40,7 +40,7 @@ def generate_message(exercise, failure_type):
     filtered_feedback = feedback.rsplit('.', 1)[0] + '.'
     return pose, filtered_feedback
 
-print(generate_message("cobra", "lower body beneath hips moving up as well"))
+print(generate_message("chair", "leg angle too wide"))
 
 
 #Tree -- hands moving up and down too fast, foot too low, unbalanced and wobbling
